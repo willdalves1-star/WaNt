@@ -156,16 +156,53 @@
       padding: 1rem;
       border-bottom: 1px solid rgba(255, 255, 255, 0.03);
       cursor: pointer;
-      color: var(--text-secondary);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       font-size: 0.95rem;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
     }
 
     #note-list li:hover, #note-list li.active {
       background: rgba(255, 255, 255, 0.06);
       color: var(--text-primary);
+    }
+
+    .note-item-content {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .note-item-title {
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .note-item-date {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+
+    .btn-delete-note {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 1.1rem;
+      transition: all 0.2s;
+      margin-left: 8px;
+      flex-shrink: 0;
+    }
+
+    .btn-delete-note:hover {
+      color: var(--danger-color);
+      background: rgba(255, 69, 58, 0.1);
     }
 
     .sidebar-footer {
@@ -258,6 +295,26 @@
 
     #note-body:focus { color: var(--text-primary); }
 
+    .note-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--glass-border);
+    }
+
+    .note-date {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    .note-date-label {
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-right: 4px;
+    }
+
     /* --- Notion-like Checklist Item --- */
     .checklist-item {
       display: flex;
@@ -272,6 +329,70 @@
       width: 18px;
       height: 18px;
       cursor: pointer;
+    }
+
+    /* Modal de confirmação */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-box {
+      background: #1c1c1e;
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      max-width: 360px;
+      width: 90%;
+      text-align: center;
+    }
+
+    .modal-box h4 {
+      margin-bottom: 0.5rem;
+      font-size: 1.1rem;
+    }
+
+    .modal-box p {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .modal-actions button {
+      flex: 1;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .btn-cancel {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-primary);
+    }
+
+    .btn-confirm-delete {
+      background: var(--danger-color);
+      color: #fff;
     }
 
     /* --- Media Queries --- */
@@ -329,13 +450,36 @@
             <button id="btn-add-checklist" class="btn-action">☑ Checklist</button>
           </div>
         </div>
+        <button id="btn-delete-current" class="btn-danger" style="display: none;">🗑 Excluir</button>
       </header>
       
       <div class="editor-content">
+        <div class="note-meta">
+          <span class="note-date">
+            <span class="note-date-label">Criado:</span>
+            <span id="note-created">—</span>
+          </span>
+          <span class="note-date">
+            <span class="note-date-label">Atualizado:</span>
+            <span id="note-updated">—</span>
+          </span>
+        </div>
         <input type="text" id="note-title" placeholder="Título da página..." />
         <div id="note-body" contenteditable="true" placeholder="Comece a digitar ou adicione um checklist..."></div>
       </div>
     </main>
+  </div>
+
+  <!-- Modal de confirmação para excluir -->
+  <div id="delete-modal" class="modal-overlay">
+    <div class="modal-box">
+      <h4>Excluir nota</h4>
+      <p>Tem certeza que deseja excluir esta nota? Esta ação não pode ser desfeita.</p>
+      <div class="modal-actions">
+        <button id="btn-cancel-delete" class="btn-cancel">Cancelar</button>
+        <button id="btn-confirm-delete" class="btn-confirm-delete">Excluir</button>
+      </div>
+    </div>
   </div>
 
   <script type="module">
@@ -369,6 +513,7 @@
     let currentUser = null;
     let notes = [];
     let currentNoteId = null;
+    let noteToDelete = null; // ID da nota a ser excluída
 
     // Elementos da DOM
     const authScreen = document.getElementById('auth-screen');
@@ -381,6 +526,10 @@
     const noteList = document.getElementById('note-list');
     const noteTitle = document.getElementById('note-title');
     const noteBody = document.getElementById('note-body');
+    const noteCreated = document.getElementById('note-created');
+    const noteUpdated = document.getElementById('note-updated');
+    const deleteModal = document.getElementById('delete-modal');
+    const btnDeleteCurrent = document.getElementById('btn-delete-current');
 
     // --- LÓGICA DE AUTENTICAÇÃO ---
 
@@ -443,8 +592,35 @@
 
     // --- LÓGICA DO APP E NOTAS ---
 
+    function formatDate(timestamp) {
+      if (!timestamp) return '—';
+      const date = new Date(timestamp);
+      const now = new Date();
+      const diff = now - date;
+      
+      // Se for hoje, mostrar hora
+      if (diff < 24 * 60 * 60 * 1000 && date.getDate() === now.getDate()) {
+        return 'Hoje às ' + date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      }
+      
+      // Se for ontem
+      const yesterday = new Date(now);
+      yesterday.setDate(yesterday.getDate() - 1);
+      if (date.getDate() === yesterday.getDate() && 
+          date.getMonth() === yesterday.getMonth() && 
+          date.getFullYear() === yesterday.getFullYear()) {
+        return 'Ontem às ' + date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      }
+      
+      // Outros dias
+      return date.toLocaleDateString('pt-BR', { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric' 
+      }) + ' às ' + date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    }
+
     function initApp() {
-      // Carrega as notas salvas no localStorage específicas para este UID do usuário
       const saved = localStorage.getItem(`notes_${currentUser.uid}`);
       notes = saved ? JSON.parse(saved) : [];
 
@@ -461,22 +637,57 @@
       noteList.innerHTML = '';
       notes.forEach(note => {
         const li = document.createElement('li');
-        li.textContent = note.title || 'Sem título';
         if (note.id === currentNoteId) li.classList.add('active');
         
-        li.addEventListener('click', () => {
+        // Container do conteúdo da nota
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'note-item-content';
+        
+        const titleSpan = document.createElement('span');
+        titleSpan.className = 'note-item-title';
+        titleSpan.textContent = note.title || 'Sem título';
+        
+        const dateSpan = document.createElement('span');
+        dateSpan.className = 'note-item-date';
+        dateSpan.textContent = formatDate(note.updatedAt || note.createdAt);
+        
+        contentDiv.appendChild(titleSpan);
+        contentDiv.appendChild(dateSpan);
+        
+        // Botão de excluir
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'btn-delete-note';
+        deleteBtn.innerHTML = '🗑';
+        deleteBtn.title = 'Excluir nota';
+        
+        // Evento de clique no conteúdo para abrir a nota
+        contentDiv.addEventListener('click', (e) => {
+          e.stopPropagation();
           sidebar.classList.remove('open');
           loadNote(note.id);
         });
+        
+        // Evento de clique no botão de excluir
+        deleteBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          noteToDelete = note.id;
+          deleteModal.classList.add('active');
+        });
+        
+        li.appendChild(contentDiv);
+        li.appendChild(deleteBtn);
         noteList.appendChild(li);
       });
     }
 
     function createNewNote() {
+      const timestamp = Date.now();
       const newNote = {
-        id: Date.now().toString(),
+        id: timestamp.toString(),
         title: '',
-        content: ''
+        content: '',
+        createdAt: timestamp,
+        updatedAt: timestamp
       };
       notes.unshift(newNote);
       currentNoteId = newNote.id;
@@ -491,6 +702,9 @@
       if (note) {
         noteTitle.value = note.title;
         noteBody.innerHTML = note.content;
+        noteCreated.textContent = formatDate(note.createdAt);
+        noteUpdated.textContent = formatDate(note.updatedAt);
+        btnDeleteCurrent.style.display = 'inline-block';
         renderSidebar();
       }
     }
@@ -501,9 +715,33 @@
       if (note) {
         note.title = noteTitle.value;
         note.content = noteBody.innerHTML;
-        // Salva isolado no localStorage por conta do UID do Firebase
+        note.updatedAt = Date.now();
         localStorage.setItem(`notes_${currentUser.uid}`, JSON.stringify(notes)); 
       }
+      renderSidebar();
+      // Atualizar a data de atualização na tela
+      if (note) {
+        noteUpdated.textContent = formatDate(note.updatedAt);
+      }
+    }
+
+    function deleteNote(id) {
+      const noteIndex = notes.findIndex(n => n.id === id);
+      if (noteIndex === -1) return;
+      
+      notes.splice(noteIndex, 1);
+      
+      // Se a nota excluída era a atual
+      if (currentNoteId === id) {
+        if (notes.length > 0) {
+          currentNoteId = notes[0].id;
+          loadNote(currentNoteId);
+        } else {
+          createNewNote();
+        }
+      }
+      
+      saveData();
       renderSidebar();
     }
 
@@ -515,6 +753,34 @@
     document.getElementById('btn-new-note').addEventListener('click', createNewNote);
     document.getElementById('btn-toggle-sidebar').addEventListener('click', () => {
       sidebar.classList.toggle('open');
+    });
+
+    // Botão excluir nota atual no editor
+    btnDeleteCurrent.addEventListener('click', () => {
+      noteToDelete = currentNoteId;
+      deleteModal.classList.add('active');
+    });
+
+    // Modal de confirmação
+    document.getElementById('btn-cancel-delete').addEventListener('click', () => {
+      noteToDelete = null;
+      deleteModal.classList.remove('active');
+    });
+
+    document.getElementById('btn-confirm-delete').addEventListener('click', () => {
+      if (noteToDelete) {
+        deleteNote(noteToDelete);
+        noteToDelete = null;
+      }
+      deleteModal.classList.remove('active');
+    });
+
+    // Fechar modal clicando fora
+    deleteModal.addEventListener('click', (e) => {
+      if (e.target === deleteModal) {
+        noteToDelete = null;
+        deleteModal.classList.remove('active');
+      }
     });
 
     // Bloco de Checklist Estilo Notion
