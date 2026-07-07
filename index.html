@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>WA Notes - Workspace</title>
   <style>
     :root {
@@ -13,6 +13,7 @@
       --text-secondary: #8e8e93;
       --accent-color: #0a84ff;
       --danger-color: #ff453a;
+      --drag-over-bg: rgba(10, 132, 255, 0.15);
     }
 
     * {
@@ -126,7 +127,7 @@
       top: 0;
       left: -100%;
       width: 80%;
-      max-width: 300px;
+      max-width: 320px;
       height: 100%;
       z-index: 10;
       transition: left 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -146,25 +147,89 @@
 
     .sidebar-header h3 { font-size: 1.1rem; font-weight: 600; }
 
+    .drag-hint {
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid var(--glass-border);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .drag-hint span {
+      opacity: 0.7;
+    }
+
     #note-list {
       list-style: none;
       overflow-y: auto;
       flex: 1;
+      padding: 0;
     }
 
     #note-list li {
-      padding: 1rem;
+      padding: 0;
       border-bottom: 1px solid rgba(255, 255, 255, 0.03);
       cursor: pointer;
       display: flex;
       justify-content: space-between;
       align-items: center;
       font-size: 0.95rem;
+      transition: all 0.2s ease;
+      position: relative;
+      user-select: none;
+      -webkit-user-select: none;
     }
 
-    #note-list li:hover, #note-list li.active {
-      background: rgba(255, 255, 255, 0.06);
-      color: var(--text-primary);
+    #note-list li:hover {
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    #note-list li.active {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    #note-list li.dragging {
+      opacity: 0.5;
+      background: rgba(10, 132, 255, 0.2);
+      border: 2px dashed var(--accent-color);
+      border-radius: 8px;
+    }
+
+    #note-list li.drag-over {
+      background: var(--drag-over-bg);
+      border-top: 3px solid var(--accent-color);
+    }
+
+    .note-item-wrapper {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      padding: 0.75rem 0.5rem 0.75rem 0.75rem;
+      gap: 8px;
+    }
+
+    .drag-handle {
+      cursor: grab;
+      color: var(--text-secondary);
+      font-size: 1.2rem;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      opacity: 0.5;
+      transition: opacity 0.2s;
+      flex-shrink: 0;
+      touch-action: none;
+    }
+
+    .drag-handle:hover {
+      opacity: 1;
+      color: var(--accent-color);
+    }
+
+    .drag-handle:active {
+      cursor: grabbing;
     }
 
     .note-item-content {
@@ -180,6 +245,7 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      font-weight: 500;
     }
 
     .note-item-date {
@@ -192,17 +258,21 @@
       border: none;
       color: var(--text-secondary);
       cursor: pointer;
-      padding: 4px 8px;
+      padding: 6px;
       border-radius: 6px;
-      font-size: 1.1rem;
+      font-size: 1rem;
       transition: all 0.2s;
-      margin-left: 8px;
       flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
     }
 
     .btn-delete-note:hover {
       color: var(--danger-color);
-      background: rgba(255, 69, 58, 0.1);
+      background: rgba(255, 69, 58, 0.15);
     }
 
     .sidebar-footer {
@@ -220,6 +290,7 @@
       display: flex;
       flex-direction: column;
       width: 100%;
+      overflow: hidden;
     }
 
     .editor-header {
@@ -302,6 +373,7 @@
       margin-bottom: 1.5rem;
       padding-bottom: 1rem;
       border-bottom: 1px solid var(--glass-border);
+      flex-wrap: wrap;
     }
 
     .note-date {
@@ -395,12 +467,34 @@
       color: #fff;
     }
 
+    /* Feedback visual ao arrastar */
+    .drag-ghost {
+      position: fixed;
+      pointer-events: none;
+      z-index: 1000;
+      background: rgba(10, 132, 255, 0.2);
+      border: 2px solid var(--accent-color);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      color: var(--text-primary);
+      font-size: 0.95rem;
+      font-weight: 500;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      transform: translate(-50%, -50%);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 250px;
+    }
+
     /* --- Media Queries --- */
     @media (min-width: 768px) {
       #sidebar {
         position: relative;
         left: 0;
-        width: 280px;
+        width: 320px;
         border-right: 1px solid var(--glass-border);
       }
       #btn-toggle-sidebar { display: none; }
@@ -432,6 +526,11 @@
       <div class="sidebar-header">
         <h3>Minhas Notas</h3>
         <button id="btn-new-note" class="btn-icon">+</button>
+      </div>
+      
+      <div class="drag-hint">
+        <span>⋮⋮</span>
+        <span>Arraste para reordenar</span>
       </div>
       
       <ul id="note-list"></ul>
@@ -513,7 +612,16 @@
     let currentUser = null;
     let notes = [];
     let currentNoteId = null;
-    let noteToDelete = null; // ID da nota a ser excluída
+    let noteToDelete = null;
+
+    // Variáveis para Drag and Drop
+    let draggedItem = null;
+    let draggedNoteId = null;
+    let dragGhost = null;
+    let touchStartY = 0;
+    let touchStartX = 0;
+    let isDragging = false;
+    let dragStartTimeout = null;
 
     // Elementos da DOM
     const authScreen = document.getElementById('auth-screen');
@@ -542,7 +650,6 @@
       authError.style.display = 'none';
     }
 
-    // Login
     document.getElementById('btn-login').addEventListener('click', async () => {
       hideError();
       try {
@@ -553,7 +660,6 @@
       }
     });
 
-    // Cadastro
     document.getElementById('btn-register').addEventListener('click', async () => {
       hideError();
       if (!emailInput.value || passwordInput.value.length < 6) {
@@ -568,12 +674,10 @@
       }
     });
 
-    // Logout
     document.getElementById('btn-logout').addEventListener('click', () => {
       signOut(auth);
     });
 
-    // Observador de Estado (Logado vs Deslogado)
     onAuthStateChanged(auth, (user) => {
       if (user) {
         currentUser = user;
@@ -598,12 +702,10 @@
       const now = new Date();
       const diff = now - date;
       
-      // Se for hoje, mostrar hora
       if (diff < 24 * 60 * 60 * 1000 && date.getDate() === now.getDate()) {
         return 'Hoje às ' + date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
       }
       
-      // Se for ontem
       const yesterday = new Date(now);
       yesterday.setDate(yesterday.getDate() - 1);
       if (date.getDate() === yesterday.getDate() && 
@@ -612,7 +714,6 @@
         return 'Ontem às ' + date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
       }
       
-      // Outros dias
       return date.toLocaleDateString('pt-BR', { 
         day: '2-digit', 
         month: '2-digit', 
@@ -624,22 +725,266 @@
       const saved = localStorage.getItem(`notes_${currentUser.uid}`);
       notes = saved ? JSON.parse(saved) : [];
 
+      // Adiciona ordem se não existir
+      notes.forEach((note, index) => {
+        if (note.order === undefined) {
+          note.order = index;
+        }
+      });
+
       if (notes.length === 0) {
         createNewNote();
       } else {
+        // Ordena por campo 'order'
+        notes.sort((a, b) => a.order - b.order);
         currentNoteId = notes[0].id;
         renderSidebar();
         loadNote(currentNoteId);
       }
     }
 
+    // --- SISTEMA DE DRAG AND DROP ---
+
+    function createDragGhost(text) {
+      const ghost = document.createElement('div');
+      ghost.className = 'drag-ghost';
+      ghost.textContent = text || 'Sem título';
+      document.body.appendChild(ghost);
+      return ghost;
+    }
+
+    function removeDragGhost() {
+      if (dragGhost) {
+        dragGhost.remove();
+        dragGhost = null;
+      }
+    }
+
+    function handleDragStart(e, noteId, element) {
+      // Previne comportamento padrão
+      e.preventDefault();
+      
+      draggedNoteId = noteId;
+      draggedItem = element;
+      isDragging = true;
+      
+      // Adiciona classe visual
+      element.classList.add('dragging');
+      
+      // Cria o ghost
+      const note = notes.find(n => n.id === noteId);
+      dragGhost = createDragGhost(note ? note.title : 'Sem título');
+      
+      // Desabilita transições durante o drag
+      const items = noteList.querySelectorAll('li');
+      items.forEach(item => {
+        item.style.transition = 'none';
+      });
+    }
+
+    function handleDragMove(e) {
+      if (!isDragging || !draggedItem) return;
+      
+      e.preventDefault();
+      
+      // Obtém coordenadas do toque/mouse
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      
+      // Move o ghost
+      if (dragGhost) {
+        dragGhost.style.left = clientX + 'px';
+        dragGhost.style.top = clientY + 'px';
+      }
+      
+      // Encontra o item sob o cursor
+      const items = [...noteList.querySelectorAll('li:not(.dragging)')];
+      
+      // Remove classes de drag-over de todos
+      items.forEach(item => item.classList.remove('drag-over'));
+      
+      // Encontra o item mais próximo
+      const targetItem = items.find(item => {
+        const rect = item.getBoundingClientRect();
+        return clientY >= rect.top && clientY <= rect.bottom;
+      });
+      
+      if (targetItem) {
+        targetItem.classList.add('drag-over');
+      }
+    }
+
+    function handleDragEnd(e) {
+      if (!isDragging) return;
+      
+      e.preventDefault();
+      
+      // Remove classes visuais
+      if (draggedItem) {
+        draggedItem.classList.remove('dragging');
+      }
+      
+      // Remove todas as classes drag-over
+      const items = noteList.querySelectorAll('li');
+      items.forEach(item => {
+        item.classList.remove('drag-over');
+        item.style.transition = '';
+      });
+      
+      // Obtém coordenadas finais
+      const clientY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
+      
+      // Encontra o item alvo
+      const targetItem = [...items].find(item => {
+        if (item === draggedItem) return false;
+        const rect = item.getBoundingClientRect();
+        return clientY >= rect.top && clientY <= rect.bottom;
+      });
+      
+      if (targetItem && draggedNoteId) {
+        const targetNoteId = targetItem.dataset.noteId;
+        reorderNotes(draggedNoteId, targetNoteId);
+      }
+      
+      // Limpa estado
+      removeDragGhost();
+      draggedItem = null;
+      draggedNoteId = null;
+      isDragging = false;
+      
+      if (dragStartTimeout) {
+        clearTimeout(dragStartTimeout);
+        dragStartTimeout = null;
+      }
+    }
+
+    function reorderNotes(draggedId, targetId) {
+      const draggedIndex = notes.findIndex(n => n.id === draggedId);
+      const targetIndex = notes.findIndex(n => n.id === targetId);
+      
+      if (draggedIndex === -1 || targetIndex === -1) return;
+      
+      // Remove o item arrastado
+      const [draggedNote] = notes.splice(draggedIndex, 1);
+      
+      // Insere na nova posição
+      notes.splice(targetIndex, 0, draggedNote);
+      
+      // Atualiza ordem
+      notes.forEach((note, index) => {
+        note.order = index;
+      });
+      
+      // Salva e renderiza
+      saveDataDirect();
+      renderSidebar();
+    }
+
+    function setupDragListeners() {
+      // Remove listeners antigos para evitar duplicação
+      noteList.removeEventListener('touchstart', handleTouchStart);
+      noteList.removeEventListener('touchmove', handleTouchMove);
+      noteList.removeEventListener('touchend', handleTouchEnd);
+      noteList.removeEventListener('mousedown', handleMouseDown);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      
+      // Adiciona novos listeners
+      noteList.addEventListener('touchstart', handleTouchStart, { passive: false });
+      noteList.addEventListener('touchmove', handleTouchMove, { passive: false });
+      noteList.addEventListener('touchend', handleTouchEnd);
+      noteList.addEventListener('mousedown', handleMouseDown);
+    }
+
+    // Handlers de Touch
+    function handleTouchStart(e) {
+      const handle = e.target.closest('.drag-handle');
+      if (!handle) return;
+      
+      const li = handle.closest('li');
+      if (!li) return;
+      
+      const noteId = li.dataset.noteId;
+      touchStartY = e.touches[0].clientY;
+      touchStartX = e.touches[0].clientX;
+      
+      // Timeout para iniciar o drag após um pequeno delay (evita conflito com scroll)
+      dragStartTimeout = setTimeout(() => {
+        handleDragStart(e, noteId, li);
+      }, 150);
+    }
+
+    function handleTouchMove(e) {
+      if (!isDragging) {
+        // Cancela o drag se o usuário moveu muito na horizontal (scroll)
+        if (dragStartTimeout) {
+          const moveY = Math.abs(e.touches[0].clientY - touchStartY);
+          const moveX = Math.abs(e.touches[0].clientX - touchStartX);
+          
+          if (moveX > 10 || moveY > 10) {
+            clearTimeout(dragStartTimeout);
+            dragStartTimeout = null;
+          }
+        }
+        return;
+      }
+      
+      e.preventDefault();
+      handleDragMove(e);
+    }
+
+    function handleTouchEnd(e) {
+      handleDragEnd(e);
+    }
+
+    // Handlers de Mouse
+    function handleMouseDown(e) {
+      const handle = e.target.closest('.drag-handle');
+      if (!handle) return;
+      
+      const li = handle.closest('li');
+      if (!li) return;
+      
+      const noteId = li.dataset.noteId;
+      handleDragStart(e, noteId, li);
+      
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    function handleMouseMove(e) {
+      handleDragMove(e);
+    }
+
+    function handleMouseUp(e) {
+      handleDragEnd(e);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    }
+
+    // --- RENDERIZAÇÃO ---
+
     function renderSidebar() {
       noteList.innerHTML = '';
+      
       notes.forEach(note => {
         const li = document.createElement('li');
+        li.dataset.noteId = note.id;
+        li.draggable = false; // Usamos drag manual
+        
         if (note.id === currentNoteId) li.classList.add('active');
         
-        // Container do conteúdo da nota
+        // Wrapper
+        const wrapper = document.createElement('div');
+        wrapper.className = 'note-item-wrapper';
+        
+        // Alça de arrasto
+        const dragHandle = document.createElement('div');
+        dragHandle.className = 'drag-handle';
+        dragHandle.innerHTML = '⋮⋮';
+        dragHandle.title = 'Arraste para reordenar';
+        
+        // Container do conteúdo
         const contentDiv = document.createElement('div');
         contentDiv.className = 'note-item-content';
         
@@ -660,24 +1005,28 @@
         deleteBtn.innerHTML = '🗑';
         deleteBtn.title = 'Excluir nota';
         
-        // Evento de clique no conteúdo para abrir a nota
+        // Eventos
         contentDiv.addEventListener('click', (e) => {
-          e.stopPropagation();
+          if (isDragging) return;
           sidebar.classList.remove('open');
           loadNote(note.id);
         });
         
-        // Evento de clique no botão de excluir
         deleteBtn.addEventListener('click', (e) => {
           e.stopPropagation();
           noteToDelete = note.id;
           deleteModal.classList.add('active');
         });
         
-        li.appendChild(contentDiv);
-        li.appendChild(deleteBtn);
+        wrapper.appendChild(dragHandle);
+        wrapper.appendChild(contentDiv);
+        wrapper.appendChild(deleteBtn);
+        li.appendChild(wrapper);
         noteList.appendChild(li);
       });
+      
+      // Reconfigura os listeners de drag
+      setupDragListeners();
     }
 
     function createNewNote() {
@@ -687,11 +1036,18 @@
         title: '',
         content: '',
         createdAt: timestamp,
-        updatedAt: timestamp
+        updatedAt: timestamp,
+        order: 0
       };
+      
+      // Incrementa a ordem de todas as notas existentes
+      notes.forEach(note => {
+        note.order = (note.order || 0) + 1;
+      });
+      
       notes.unshift(newNote);
       currentNoteId = newNote.id;
-      saveData();
+      saveDataDirect();
       renderSidebar();
       loadNote(currentNoteId);
     }
@@ -716,13 +1072,15 @@
         note.title = noteTitle.value;
         note.content = noteBody.innerHTML;
         note.updatedAt = Date.now();
-        localStorage.setItem(`notes_${currentUser.uid}`, JSON.stringify(notes)); 
-      }
-      renderSidebar();
-      // Atualizar a data de atualização na tela
-      if (note) {
+        saveDataDirect();
         noteUpdated.textContent = formatDate(note.updatedAt);
       }
+      renderSidebar();
+    }
+
+    function saveDataDirect() {
+      if (!currentUser) return;
+      localStorage.setItem(`notes_${currentUser.uid}`, JSON.stringify(notes));
     }
 
     function deleteNote(id) {
@@ -731,7 +1089,6 @@
       
       notes.splice(noteIndex, 1);
       
-      // Se a nota excluída era a atual
       if (currentNoteId === id) {
         if (notes.length > 0) {
           currentNoteId = notes[0].id;
@@ -741,27 +1098,26 @@
         }
       }
       
-      saveData();
+      saveDataDirect();
       renderSidebar();
     }
 
-    // Auto-save ao digitar
+    // Auto-save
     noteTitle.addEventListener('input', saveData);
     noteBody.addEventListener('input', saveData);
 
-    // Controles do App
+    // Controles
     document.getElementById('btn-new-note').addEventListener('click', createNewNote);
     document.getElementById('btn-toggle-sidebar').addEventListener('click', () => {
       sidebar.classList.toggle('open');
     });
 
-    // Botão excluir nota atual no editor
     btnDeleteCurrent.addEventListener('click', () => {
       noteToDelete = currentNoteId;
       deleteModal.classList.add('active');
     });
 
-    // Modal de confirmação
+    // Modal
     document.getElementById('btn-cancel-delete').addEventListener('click', () => {
       noteToDelete = null;
       deleteModal.classList.remove('active');
@@ -775,7 +1131,6 @@
       deleteModal.classList.remove('active');
     });
 
-    // Fechar modal clicando fora
     deleteModal.addEventListener('click', (e) => {
       if (e.target === deleteModal) {
         noteToDelete = null;
@@ -783,7 +1138,7 @@
       }
     });
 
-    // Bloco de Checklist Estilo Notion
+    // Checklist
     document.getElementById('btn-add-checklist').addEventListener('click', () => {
       const checklistId = 'check-' + Date.now();
       const html = `
@@ -796,6 +1151,16 @@
       noteBody.focus();
       document.execCommand('insertHTML', false, html);
       saveData();
+    });
+
+    // Fechar sidebar ao clicar fora no mobile
+    document.addEventListener('click', (e) => {
+      if (window.innerWidth < 768 && 
+          sidebar.classList.contains('open') && 
+          !sidebar.contains(e.target) && 
+          e.target.id !== 'btn-toggle-sidebar') {
+        sidebar.classList.remove('open');
+      }
     });
   </script>
 </body>
