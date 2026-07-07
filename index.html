@@ -1,1210 +1,536 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#ffffff">
-    <title>WANotes - Blocos de Notas</title>
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        :root {
-            --primary: #2383e2;
-            --primary-hover: #1a6bc1;
-            --danger: #e03e3e;
-            --success: #0f7b4e;
-            --warning: #dfab03;
-            --bg-primary: #ffffff;
-            --bg-secondary: #f7f6f3;
-            --bg-hover: #f1f1ef;
-            --border: #e0e0e0;
-            --text-primary: #37352f;
-            --text-secondary: #6b6964;
-            --text-light: #9b9a97;
-            --shadow: 0 1px 3px rgba(0,0,0,0.08);
-            --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
-        }
-
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--bg-secondary);
-            color: var(--text-primary);
-            overflow-x: hidden;
-            -webkit-font-smoothing: antialiased;
-        }
-
-        .screen {
-            display: none;
-            min-height: 100vh;
-        }
-
-        .screen.active {
-            display: block;
-        }
-
-        /* ===== TELA DE LOGIN ===== */
-        .login-container {
-            max-width: 400px;
-            margin: 0 auto;
-            padding: 40px 24px;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
-        .logo {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-
-        .logo-icon {
-            font-size: 64px;
-            color: var(--primary);
-        }
-
-        .logo h1 {
-            font-size: 32px;
-            font-weight: 700;
-            margin: 16px 0 8px;
-        }
-
-        .logo p {
-            color: var(--text-secondary);
-            font-size: 16px;
-        }
-
-        .login-form {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        .input-group {
-            position: relative;
-            display: flex;
-            align-items: center;
-            background: var(--bg-primary);
-            border: 2px solid var(--border);
-            border-radius: 12px;
-            padding: 0 16px;
-            transition: border-color 0.2s;
-        }
-
-        .input-group:focus-within {
-            border-color: var(--primary);
-        }
-
-        .input-group .material-icons-round {
-            color: var(--text-light);
-            margin-right: 12px;
-        }
-
-        .input-group input {
-            flex: 1;
-            padding: 16px 0;
-            border: none;
-            outline: none;
-            font-size: 16px;
-            font-family: inherit;
-            background: transparent;
-        }
-
-        .btn-primary, .btn-secondary, .btn-social {
-            width: 100%;
-            padding: 16px;
-            border: none;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 600;
-            font-family: inherit;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            transition: all 0.2s;
-        }
-
-        .btn-primary {
-            background: var(--primary);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: var(--primary-hover);
-        }
-
-        .btn-secondary {
-            background: var(--bg-hover);
-            color: var(--text-primary);
-            border: 2px solid var(--border);
-        }
-
-        .btn-secondary:hover {
-            background: var(--border);
-        }
-
-        .btn-social {
-            background: white;
-            color: var(--text-primary);
-            border: 2px solid var(--border);
-            margin-top: 12px;
-        }
-
-        .divider {
-            display: flex;
-            align-items: center;
-            margin: 24px 0;
-            color: var(--text-light);
-        }
-
-        .divider::before,
-        .divider::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: var(--border);
-        }
-
-        .divider span {
-            padding: 0 16px;
-            font-size: 14px;
-        }
-
-        /* ===== TELA PRINCIPAL ===== */
-        .app-header {
-            background: var(--bg-primary);
-            padding: 12px 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--border);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .header-left, .header-right {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .header-left h2 {
-            font-size: 18px;
-            font-weight: 600;
-        }
-
-        .icon-btn {
-            width: 40px;
-            height: 40px;
-            border: none;
-            background: transparent;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            color: var(--text-primary);
-            transition: background 0.2s;
-        }
-
-        .icon-btn:hover {
-            background: var(--bg-hover);
-        }
-
-        .search-bar {
-            background: var(--bg-primary);
-            padding: 12px 16px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            gap: 12px;
-            align-items: center;
-        }
-
-        .search-bar.hidden {
-            display: none;
-        }
-
-        .search-bar input {
-            flex: 1;
-            padding: 12px;
-            border: 2px solid var(--border);
-            border-radius: 8px;
-            font-size: 14px;
-            font-family: inherit;
-            outline: none;
-        }
-
-        .search-bar input:focus {
-            border-color: var(--primary);
-        }
-
-        .main-content {
-            padding: 16px;
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        .actions-bar {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 24px;
-            flex-wrap: wrap;
-        }
-
-        .btn-action {
-            flex: 1;
-            min-width: 140px;
-            padding: 12px;
-            border: 2px dashed var(--border);
-            background: var(--bg-primary);
-            border-radius: 12px;
-            font-size: 14px;
-            font-weight: 500;
-            font-family: inherit;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            transition: all 0.2s;
-            color: var(--text-secondary);
-        }
-
-        .btn-action:hover {
-            border-color: var(--primary);
-            color: var(--primary);
-            background: #f0f7ff;
-        }
-
-        .documents-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .document-card {
-            background: var(--bg-primary);
-            border-radius: 12px;
-            padding: 16px;
-            box-shadow: var(--shadow);
-            cursor: pointer;
-            transition: all 0.2s;
-            border: 1px solid transparent;
-        }
-
-        .document-card:hover {
-            box-shadow: var(--shadow-md);
-            border-color: var(--border);
-        }
-
-        .document-card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 8px;
-        }
-
-        .document-type {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .document-type .material-icons-round {
-            font-size: 20px;
-            color: var(--text-light);
-        }
-
-        .document-title {
-            font-size: 16px;
-            font-weight: 600;
-            border: none;
-            background: transparent;
-            font-family: inherit;
-            width: 100%;
-            outline: none;
-            color: var(--text-primary);
-        }
-
-        .document-preview {
-            font-size: 14px;
-            color: var(--text-secondary);
-            margin-top: 4px;
-            line-height: 1.5;
-        }
-
-        .document-actions {
-            display: flex;
-            gap: 4px;
-        }
-
-        .document-actions .icon-btn {
-            width: 32px;
-            height: 32px;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--text-light);
-        }
-
-        .empty-state.hidden {
-            display: none;
-        }
-
-        .empty-state .material-icons-round {
-            font-size: 64px;
-            margin-bottom: 16px;
-        }
-
-        .empty-state h3 {
-            margin-bottom: 8px;
-            color: var(--text-secondary);
-        }
-
-        /* ===== MODAL ===== */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 1000;
-            animation: fadeIn 0.2s;
-        }
-
-        .modal.active {
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        .modal-content {
-            background: var(--bg-primary);
-            border-radius: 20px 20px 0 0;
-            width: 100%;
-            max-width: 800px;
-            max-height: 90vh;
-            overflow-y: auto;
-            padding: 24px;
-            animation: slideUp 0.3s;
-        }
-
-        @keyframes slideUp {
-            from { transform: translateY(100%); }
-            to { transform: translateY(0); }
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
-        }
-
-        .modal-header h3 {
-            font-size: 20px;
-        }
-
-        .editor-content {
-            min-height: 200px;
-            padding: 16px;
-            border: 2px solid var(--border);
-            border-radius: 12px;
-            outline: none;
-            font-family: inherit;
-            font-size: 16px;
-            line-height: 1.6;
-            margin-bottom: 16px;
-        }
-
-        .editor-content:focus {
-            border-color: var(--primary);
-        }
-
-        .checklist-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 0;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .checklist-item input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-            cursor: pointer;
-        }
-
-        .checklist-item input[type="text"] {
-            flex: 1;
-            border: none;
-            outline: none;
-            font-family: inherit;
-            font-size: 16px;
-            background: transparent;
-        }
-
-        .add-checklist-btn {
-            margin-top: 12px;
-            padding: 8px 16px;
-            border: 2px dashed var(--border);
-            background: transparent;
-            border-radius: 8px;
-            cursor: pointer;
-            font-family: inherit;
-            color: var(--text-secondary);
-            transition: all 0.2s;
-        }
-
-        .add-checklist-btn:hover {
-            border-color: var(--primary);
-            color: var(--primary);
-        }
-
-        .btn-save, .btn-cancel {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            font-family: inherit;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .btn-save {
-            background: var(--primary);
-            color: white;
-        }
-
-        .btn-cancel {
-            background: var(--bg-hover);
-            color: var(--text-secondary);
-            margin-right: 8px;
-        }
-
-        /* ===== SIDEBAR ===== */
-        .sidebar {
-            position: fixed;
-            top: 0;
-            left: -300px;
-            width: 300px;
-            height: 100%;
-            background: var(--bg-primary);
-            box-shadow: var(--shadow-md);
-            transition: left 0.3s;
-            z-index: 200;
-            padding: 24px;
-        }
-
-        .sidebar.active {
-            left: 0;
-        }
-
-        .sidebar-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 199;
-        }
-
-        .sidebar-overlay.active {
-            display: block;
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 32px;
-        }
-
-        .avatar {
-            width: 48px;
-            height: 48px;
-            background: var(--bg-hover);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .avatar .material-icons-round {
-            font-size: 32px;
-            color: var(--text-light);
-        }
-
-        /* ===== RESPONSIVIDADE ===== */
-        @media (min-width: 768px) {
-            .modal-content {
-                border-radius: 20px;
-                margin: 40px auto;
-                max-height: 80vh;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .login-container {
-                padding: 24px 16px;
-            }
-            
-            .main-content {
-                padding: 12px;
-            }
-            
-            .actions-bar {
-                flex-direction: column;
-            }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WA Notes - Workspace</title>
+  <style>
+    :root {
+      --bg-dark: #0a0a0c;
+      --glass-bg: rgba(20, 20, 25, 0.65);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --text-primary: #f2f2f7;
+      --text-secondary: #8e8e93;
+      --accent-color: #0a84ff;
+      --danger-color: #ff453a;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-primary);
+      height: 100vh;
+      overflow: hidden;
+      background-image: radial-gradient(circle at top right, #1a1a24, var(--bg-dark));
+    }
+
+    .glass-panel {
+      background: var(--glass-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+    }
+
+    .screen {
+      display: none;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    /* --- Auth Screen (Liquid Glass) --- */
+    #auth-screen {
+      align-items: center;
+      justify-content: center;
+    }
+
+    .auth-box {
+      padding: 2.5rem 2rem;
+      border-radius: 20px;
+      text-align: center;
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    .auth-box h2 { font-weight: 700; font-size: 1.5rem; letter-spacing: -0.5px; }
+    .auth-box p { color: var(--text-secondary); margin: 0.5rem 0 1.5rem 0; font-size: 0.9rem; }
+
+    .auth-input {
+      width: 100%;
+      padding: 12px 16px;
+      margin-bottom: 12px;
+      border-radius: 10px;
+      border: 1px solid var(--glass-border);
+      background: rgba(0, 0, 0, 0.4);
+      color: var(--text-primary);
+      outline: none;
+      font-size: 0.95rem;
+      transition: border-color 0.2s;
+    }
+
+    .auth-input:focus { border-color: var(--accent-color); }
+
+    .auth-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .btn-primary {
+      flex: 1;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      background: var(--accent-color);
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .btn-secondary {
+      flex: 1;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid var(--glass-border);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-primary);
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-primary:hover { opacity: 0.85; }
+    .btn-secondary:hover { background: rgba(255, 255, 255, 0.1); }
+
+    .error-msg {
+      color: var(--danger-color);
+      font-size: 0.85rem;
+      margin-bottom: 12px;
+      display: none;
+    }
+
+    /* --- App Layout (Mobile First) --- */
+    #sidebar {
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 80%;
+      max-width: 300px;
+      height: 100%;
+      z-index: 10;
+      transition: left 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+    }
+
+    #sidebar.open { left: 0; }
+
+    .sidebar-header {
+      padding: 1.2rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--glass-border);
+    }
+
+    .sidebar-header h3 { font-size: 1.1rem; font-weight: 600; }
+
+    #note-list {
+      list-style: none;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    #note-list li {
+      padding: 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+      cursor: pointer;
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #note-list li:hover, #note-list li.active {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-primary);
+    }
+
+    .sidebar-footer {
+      padding: 1rem;
+      border-top: 1px solid var(--glass-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    #editor {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+    }
+
+    .editor-header {
+      padding: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--glass-border);
+    }
+
+    .header-left { display: flex; align-items: center; gap: 1rem; }
+
+    .btn-icon {
+      background: transparent;
+      border: none;
+      color: var(--text-primary);
+      font-size: 1.5rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+    }
+
+    .btn-action {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--glass-border);
+      color: var(--text-primary);
+      padding: 6px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: background 0.2s;
+    }
+
+    .btn-action:hover { background: rgba(255, 255, 255, 0.15); }
+
+    .btn-danger {
+      background: transparent;
+      border: none;
+      color: var(--danger-color);
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+
+    .editor-content {
+      flex: 1;
+      padding: 2rem 1.5rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      max-width: 800px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    #note-title {
+      background: transparent;
+      border: none;
+      color: var(--text-primary);
+      font-size: 2.2rem;
+      font-weight: 700;
+      outline: none;
+      margin-bottom: 1rem;
+      letter-spacing: -0.5px;
+    }
+
+    #note-body {
+      flex: 1;
+      outline: none;
+      font-size: 1.05rem;
+      line-height: 1.7;
+      color: var(--text-secondary);
+    }
+
+    #note-body:focus { color: var(--text-primary); }
+
+    /* --- Notion-like Checklist Item --- */
+    .checklist-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .checklist-item input[type="checkbox"] {
+      margin-top: 5px;
+      accent-color: var(--accent-color);
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+
+    /* --- Media Queries --- */
+    @media (min-width: 768px) {
+      #sidebar {
+        position: relative;
+        left: 0;
+        width: 280px;
+        border-right: 1px solid var(--glass-border);
+      }
+      #btn-toggle-sidebar { display: none; }
+    }
+  </style>
 </head>
 <body>
-    <!-- Tela de Login -->
-    <div id="login-screen" class="screen active">
-        <div class="login-container">
-            <div class="logo">
-                <span class="material-icons-round logo-icon">edit_note</span>
-                <h1>WANotes</h1>
-                <p>Suas notas organizadas</p>
-            </div>
-            
-            <form id="login-form" class="login-form">
-                <div class="input-group">
-                    <span class="material-icons-round">email</span>
-                    <input type="email" id="email" placeholder="Email" required autocomplete="email">
-                </div>
-                
-                <div class="input-group">
-                    <span class="material-icons-round">lock</span>
-                    <input type="password" id="password" placeholder="Senha" required autocomplete="current-password">
-                </div>
-                
-                <div id="login-error" style="color: var(--danger); font-size: 14px; display: none; margin-top: 8px;"></div>
-                
-                <button type="submit" class="btn-primary">
-                    <span class="material-icons-round">login</span>
-                    Entrar
-                </button>
-            </form>
-            
-            <div class="divider">
-                <span>ou</span>
-            </div>
-            
-            <button id="register-btn" class="btn-secondary">
-                <span class="material-icons-round">person_add</span>
-                Criar conta
-            </button>
-            
-            <button id="google-login" class="btn-social">
-                <span class="material-icons-round">g_mobiledata</span>
-                Entrar com Google
-            </button>
-            
-            <button id="forgot-password" style="background: none; border: none; color: var(--primary); margin-top: 16px; cursor: pointer; font-family: inherit; font-size: 14px; text-decoration: underline;">
-                Esqueceu a senha?
-            </button>
-        </div>
+
+  <div id="auth-screen" class="screen active glass-panel">
+    <div class="auth-box">
+      <h2>WA Notes</h2>
+      <p>Gerencie suas notas e checklists.</p>
+      
+      <div id="auth-error" class="error-msg"></div>
+
+      <input type="email" id="auth-email" class="auth-input" placeholder="Seu e-mail..." />
+      <input type="password" id="auth-password" class="auth-input" placeholder="Sua senha..." />
+      
+      <div class="auth-buttons">
+        <button id="btn-login" class="btn-primary">Entrar</button>
+        <button id="btn-register" class="btn-secondary">Criar Conta</button>
+      </div>
     </div>
+  </div>
 
-    <!-- Tela Principal -->
-    <div id="main-screen" class="screen">
-        <header class="app-header">
-            <div class="header-left">
-                <button id="menu-btn" class="icon-btn">
-                    <span class="material-icons-round">menu</span>
-                </button>
-                <h2>Minhas Notas</h2>
-            </div>
-            <div class="header-right">
-                <button id="search-btn" class="icon-btn">
-                    <span class="material-icons-round">search</span>
-                </button>
-                <button id="logout-btn" class="icon-btn">
-                    <span class="material-icons-round">logout</span>
-                </button>
-            </div>
-        </header>
+  <div id="app-screen" class="screen">
+    
+    <nav id="sidebar" class="glass-panel">
+      <div class="sidebar-header">
+        <h3>Minhas Notas</h3>
+        <button id="btn-new-note" class="btn-icon">+</button>
+      </div>
+      
+      <ul id="note-list"></ul>
 
-        <div id="search-bar" class="search-bar hidden">
-            <input type="text" id="search-input" placeholder="Pesquisar notas...">
-            <button id="close-search" class="icon-btn">
-                <span class="material-icons-round">close</span>
-            </button>
+      <div class="sidebar-footer">
+        <span id="user-display">Usuário</span>
+        <button id="btn-logout" class="btn-danger">Sair</button>
+      </div>
+    </nav>
+    
+    <main id="editor">
+      <header class="editor-header glass-panel">
+        <div class="header-left">
+          <button id="btn-toggle-sidebar" class="btn-icon">☰</button>
+          <div class="toolbar">
+            <button id="btn-add-checklist" class="btn-action">☑ Checklist</button>
+          </div>
         </div>
+      </header>
+      
+      <div class="editor-content">
+        <input type="text" id="note-title" placeholder="Título da página..." />
+        <div id="note-body" contenteditable="true" placeholder="Comece a digitar ou adicione um checklist..."></div>
+      </div>
+    </main>
+  </div>
 
-        <main class="main-content">
-            <div class="actions-bar">
-                <button id="new-note-btn" class="btn-action">
-                    <span class="material-icons-round">note_add</span>
-                    Nova Nota
-                </button>
-                <button id="new-checklist-btn" class="btn-action">
-                    <span class="material-icons-round">checklist</span>
-                    Nova Lista
-                </button>
-            </div>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
+    import { 
+      getAuth, 
+      signInWithEmailAndPassword, 
+      createUserWithEmailAndPassword, 
+      onAuthStateChanged, 
+      signOut 
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-            <div id="documents-list" class="documents-list"></div>
+    // Configuração do seu Projeto Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyDS7gR-fUn7TsFyVjhsF3QW7of2ZwHfR7A",
+      authDomain: "wanotes-c295e.firebaseapp.com",
+      projectId: "wanotes-c295e",
+      storageBucket: "wanotes-c295e.firebasestorage.app",
+      messagingSenderId: "965036265409",
+      appId: "1:965036265409:web:75e5bcaa59aae960682940",
+      measurementId: "G-XSRFDL8HF1"
+    };
 
-            <div id="empty-state" class="empty-state hidden">
-                <span class="material-icons-round">create_new_folder</span>
-                <h3>Nenhuma nota ainda</h3>
-                <p>Crie sua primeira nota ou lista tocando nos botões acima</p>
-            </div>
-        </main>
+    // Inicialização do Firebase e Auth
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const auth = getAuth(app);
 
-        <div id="sidebar-overlay" class="sidebar-overlay"></div>
+    // Variáveis de Estado
+    let currentUser = null;
+    let notes = [];
+    let currentNoteId = null;
+
+    // Elementos da DOM
+    const authScreen = document.getElementById('auth-screen');
+    const appScreen = document.getElementById('app-screen');
+    const authError = document.getElementById('auth-error');
+    const emailInput = document.getElementById('auth-email');
+    const passwordInput = document.getElementById('auth-password');
+    const userDisplay = document.getElementById('user-display');
+    const sidebar = document.getElementById('sidebar');
+    const noteList = document.getElementById('note-list');
+    const noteTitle = document.getElementById('note-title');
+    const noteBody = document.getElementById('note-body');
+
+    // --- LÓGICA DE AUTENTICAÇÃO ---
+
+    function showError(message) {
+      authError.textContent = message;
+      authError.style.display = 'block';
+    }
+
+    function hideError() {
+      authError.style.display = 'none';
+    }
+
+    // Login
+    document.getElementById('btn-login').addEventListener('click', async () => {
+      hideError();
+      try {
+        await signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
+      } catch (error) {
+        if (error.code === 'auth/invalid-credential') showError("E-mail ou senha incorretos.");
+        else showError("Erro ao entrar: " + error.message);
+      }
+    });
+
+    // Cadastro
+    document.getElementById('btn-register').addEventListener('click', async () => {
+      hideError();
+      if (!emailInput.value || passwordInput.value.length < 6) {
+        showError("A senha deve ter pelo menos 6 caracteres.");
+        return;
+      }
+      try {
+        await createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
+      } catch (error) {
+        if (error.code === 'auth/email-already-in-use') showError("Este e-mail já está em uso.");
+        else showError("Erro ao criar conta: " + error.message);
+      }
+    });
+
+    // Logout
+    document.getElementById('btn-logout').addEventListener('click', () => {
+      signOut(auth);
+    });
+
+    // Observador de Estado (Logado vs Deslogado)
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        currentUser = user;
+        userDisplay.textContent = user.email.split('@')[0];
+        authScreen.classList.remove('active');
+        appScreen.classList.add('active');
+        emailInput.value = '';
+        passwordInput.value = '';
+        initApp();
+      } else {
+        currentUser = null;
+        appScreen.classList.remove('active');
+        authScreen.classList.add('active');
+      }
+    });
+
+    // --- LÓGICA DO APP E NOTAS ---
+
+    function initApp() {
+      // Carrega as notas salvas no localStorage específicas para este UID do usuário
+      const saved = localStorage.getItem(`notes_${currentUser.uid}`);
+      notes = saved ? JSON.parse(saved) : [];
+
+      if (notes.length === 0) {
+        createNewNote();
+      } else {
+        currentNoteId = notes[0].id;
+        renderSidebar();
+        loadNote(currentNoteId);
+      }
+    }
+
+    function renderSidebar() {
+      noteList.innerHTML = '';
+      notes.forEach(note => {
+        const li = document.createElement('li');
+        li.textContent = note.title || 'Sem título';
+        if (note.id === currentNoteId) li.classList.add('active');
         
-        <div id="sidebar" class="sidebar">
-            <div class="user-info">
-                <div class="avatar">
-                    <span class="material-icons-round">account_circle</span>
-                </div>
-                <div>
-                    <div style="font-weight: 600;" id="user-name">Usuário</div>
-                    <div style="font-size: 14px; color: var(--text-secondary);" id="user-email">email@exemplo.com</div>
-                </div>
-            </div>
-            <button id="sidebar-logout" class="btn-secondary" style="width: 100%;">
-                <span class="material-icons-round">logout</span>
-                Sair
-            </button>
+        li.addEventListener('click', () => {
+          sidebar.classList.remove('open');
+          loadNote(note.id);
+        });
+        noteList.appendChild(li);
+      });
+    }
+
+    function createNewNote() {
+      const newNote = {
+        id: Date.now().toString(),
+        title: '',
+        content: ''
+      };
+      notes.unshift(newNote);
+      currentNoteId = newNote.id;
+      saveData();
+      renderSidebar();
+      loadNote(currentNoteId);
+    }
+
+    function loadNote(id) {
+      currentNoteId = id;
+      const note = notes.find(n => n.id === id);
+      if (note) {
+        noteTitle.value = note.title;
+        noteBody.innerHTML = note.content;
+        renderSidebar();
+      }
+    }
+
+    function saveData() {
+      if (!currentNoteId || !currentUser) return;
+      const note = notes.find(n => n.id === currentNoteId);
+      if (note) {
+        note.title = noteTitle.value;
+        note.content = noteBody.innerHTML;
+        // Salva isolado no localStorage por conta do UID do Firebase
+        localStorage.setItem(`notes_${currentUser.uid}`, JSON.stringify(notes)); 
+      }
+      renderSidebar();
+    }
+
+    // Auto-save ao digitar
+    noteTitle.addEventListener('input', saveData);
+    noteBody.addEventListener('input', saveData);
+
+    // Controles do App
+    document.getElementById('btn-new-note').addEventListener('click', createNewNote);
+    document.getElementById('btn-toggle-sidebar').addEventListener('click', () => {
+      sidebar.classList.toggle('open');
+    });
+
+    // Bloco de Checklist Estilo Notion
+    document.getElementById('btn-add-checklist').addEventListener('click', () => {
+      const checklistId = 'check-' + Date.now();
+      const html = `
+        <div class="checklist-item">
+          <input type="checkbox" id="${checklistId}">
+          <div contenteditable="true" style="flex:1; outline:none;" placeholder="Item da lista..."></div>
         </div>
-    </div>
-
-    <!-- Modal de Edição -->
-    <div id="editor-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="modal-title">Nova Nota</h3>
-                <button id="close-modal" class="icon-btn">
-                    <span class="material-icons-round">close</span>
-                </button>
-            </div>
-            
-            <input type="text" id="note-title" placeholder="Título da nota..." style="width: 100%; padding: 12px; border: 2px solid var(--border); border-radius: 8px; font-size: 18px; font-weight: 600; font-family: inherit; outline: none; margin-bottom: 16px;">
-            
-            <div id="note-editor" class="editor-content" contenteditable="true" placeholder="Comece a escrever..."></div>
-            
-            <div id="checklist-editor" style="display: none;">
-                <div id="checklist-items"></div>
-                <button id="add-item-btn" class="add-checklist-btn">
-                    <span class="material-icons-round">add</span>
-                    Adicionar item
-                </button>
-            </div>
-            
-            <div style="display: flex; justify-content: flex-end; margin-top: 24px;">
-                <button id="cancel-edit" class="btn-cancel">Cancelar</button>
-                <button id="save-document" class="btn-save">Salvar</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Firebase SDKs Compat -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-
-    <script>
-        // ===== CONFIGURAÇÃO DO FIREBASE =====
-        const firebaseConfig = {
-            apiKey: "AIzaSyDS7gR-fUn7TsFyVjhsF3QW7of2ZwHfR7A",
-            authDomain: "wanotes-c295e.firebaseapp.com",
-            projectId: "wanotes-c295e",
-            storageBucket: "wanotes-c295e.firebasestorage.app",
-            messagingSenderId: "965036265409",
-            appId: "1:965036265409:web:75e5bcaa59aae960682940",
-            measurementId: "G-XSRFDL8HF1"
-        };
-
-        // Inicializar Firebase
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
-
-        // ===== ESTADO DA APLICAÇÃO =====
-        let currentUser = null;
-        let currentDocument = null;
-        let isEditing = false;
-        let editorType = 'note';
-
-        // ===== ELEMENTOS DOM =====
-        const loginScreen = document.getElementById('login-screen');
-        const mainScreen = document.getElementById('main-screen');
-        const loginForm = document.getElementById('login-form');
-        const registerBtn = document.getElementById('register-btn');
-        const googleLoginBtn = document.getElementById('google-login');
-        const forgotPasswordBtn = document.getElementById('forgot-password');
-        const logoutBtn = document.getElementById('logout-btn');
-        const menuBtn = document.getElementById('menu-btn');
-        const searchBtn = document.getElementById('search-btn');
-        const closeSearchBtn = document.getElementById('close-search');
-        const searchBar = document.getElementById('search-bar');
-        const searchInput = document.getElementById('search-input');
-        const newNoteBtn = document.getElementById('new-note-btn');
-        const newChecklistBtn = document.getElementById('new-checklist-btn');
-        const documentsList = document.getElementById('documents-list');
-        const emptyState = document.getElementById('empty-state');
-        const editorModal = document.getElementById('editor-modal');
-        const closeModalBtn = document.getElementById('close-modal');
-        const cancelEditBtn = document.getElementById('cancel-edit');
-        const saveDocumentBtn = document.getElementById('save-document');
-        const noteEditor = document.getElementById('note-editor');
-        const checklistEditor = document.getElementById('checklist-editor');
-        const noteTitle = document.getElementById('note-title');
-        const checklistItems = document.getElementById('checklist-items');
-        const addItemBtn = document.getElementById('add-item-btn');
-        const sidebar = document.getElementById('sidebar');
-        const sidebarOverlay = document.getElementById('sidebar-overlay');
-        const sidebarLogout = document.getElementById('sidebar-logout');
-        const userName = document.getElementById('user-name');
-        const userEmail = document.getElementById('user-email');
-        const loginError = document.getElementById('login-error');
-        const modalTitle = document.getElementById('modal-title');
-
-        // ===== AUTENTICAÇÃO =====
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            
-            try {
-                loginError.style.display = 'none';
-                await auth.signInWithEmailAndPassword(email, password);
-            } catch (error) {
-                loginError.style.display = 'block';
-                loginError.textContent = getErrorMessage(error.code);
-            }
-        });
-
-        registerBtn.addEventListener('click', async () => {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            
-            if (!email || !password) {
-                alert('Preencha email e senha para criar conta');
-                return;
-            }
-            
-            try {
-                loginError.style.display = 'none';
-                await auth.createUserWithEmailAndPassword(email, password);
-            } catch (error) {
-                loginError.style.display = 'block';
-                loginError.textContent = getErrorMessage(error.code);
-            }
-        });
-
-        googleLoginBtn.addEventListener('click', async () => {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            try {
-                await auth.signInWithPopup(provider);
-            } catch (error) {
-                loginError.style.display = 'block';
-                loginError.textContent = getErrorMessage(error.code);
-            }
-        });
-
-        forgotPasswordBtn.addEventListener('click', async () => {
-            const email = document.getElementById('email').value;
-            if (!email) {
-                alert('Digite seu email para recuperar a senha');
-                return;
-            }
-            
-            try {
-                await auth.sendPasswordResetEmail(email);
-                alert('Email de recuperação enviado! Verifique sua caixa de entrada.');
-            } catch (error) {
-                alert(getErrorMessage(error.code));
-            }
-        });
-
-        logoutBtn.addEventListener('click', () => auth.signOut());
-        sidebarLogout.addEventListener('click', () => auth.signOut());
-
-        function getErrorMessage(code) {
-            const messages = {
-                'auth/user-not-found': 'Usuário não encontrado',
-                'auth/wrong-password': 'Senha incorreta',
-                'auth/email-already-in-use': 'Email já está em uso',
-                'auth/weak-password': 'Senha muito fraca (mínimo 6 caracteres)',
-                'auth/invalid-email': 'Email inválido',
-                'auth/too-many-requests': 'Muitas tentativas. Tente novamente mais tarde',
-                'auth/popup-closed-by-user': 'Login cancelado'
-            };
-            return messages[code] || 'Erro de autenticação. Verifique suas credenciais.';
-        }
-
-        // Observer de autenticação
-        auth.onAuthStateChanged((user) => {
-            if (user) {
-                currentUser = user;
-                loginScreen.classList.remove('active');
-                mainScreen.classList.add('active');
-                userName.textContent = user.displayName || 'Usuário';
-                userEmail.textContent = user.email;
-                loadDocuments();
-            } else {
-                currentUser = null;
-                mainScreen.classList.remove('active');
-                loginScreen.classList.add('active');
-                documentsList.innerHTML = '';
-            }
-        });
-
-        // ===== GERENCIAMENTO DE DOCUMENTOS =====
-        async function loadDocuments(searchTerm = '') {
-            if (!currentUser) return;
-            
-            try {
-                let query = db.collection('users')
-                    .doc(currentUser.uid)
-                    .collection('documents')
-                    .orderBy('updatedAt', 'desc');
-                
-                const snapshot = await query.get();
-                documentsList.innerHTML = '';
-                
-                if (snapshot.empty) {
-                    emptyState.classList.remove('hidden');
-                } else {
-                    emptyState.classList.add('hidden');
-                    
-                    let hasResults = false;
-                    
-                    snapshot.forEach((doc) => {
-                        const data = doc.data();
-                        const searchMatch = !searchTerm || 
-                            data.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            (data.content && data.content.toLowerCase().includes(searchTerm.toLowerCase()));
-                        
-                        if (searchMatch) {
-                            hasResults = true;
-                            renderDocumentCard(doc.id, data);
-                        }
-                    });
-                    
-                    if (!hasResults && searchTerm) {
-                        emptyState.classList.remove('hidden');
-                        emptyState.querySelector('h3').textContent = 'Nenhum resultado';
-                        emptyState.querySelector('p').textContent = 'Tente outros termos de busca';
-                    }
-                }
-            } catch (error) {
-                console.error('Erro ao carregar documentos:', error);
-            }
-        }
-
-        function renderDocumentCard(id, data) {
-            const card = document.createElement('div');
-            card.className = 'document-card';
-            
-            const icon = data.type === 'checklist' ? 'checklist' : 'article';
-            const preview = data.type === 'checklist' 
-                ? `${data.items ? data.items.filter(i => i.checked).length : 0}/${data.items ? data.items.length : 0} itens concluídos`
-                : (data.content ? data.content.replace(/<[^>]*>/g, '').substring(0, 100) + '...' : 'Nota vazia');
-            
-            const date = data.updatedAt ? new Date(data.updatedAt.toDate()).toLocaleDateString('pt-BR', {
-                day: '2-digit',
-                month: 'short',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            }) : '';
-            
-            card.innerHTML = `
-                <div class="document-card-header">
-                    <div class="document-type">
-                        <span class="material-icons-round">${icon}</span>
-                        <span style="font-size: 12px; color: var(--text-light);">${data.type === 'checklist' ? 'Lista de Tarefas' : 'Nota'}</span>
-                    </div>
-                    <div class="document-actions">
-                        <button class="icon-btn edit-doc" data-id="${id}" title="Editar">
-                            <span class="material-icons-round">edit</span>
-                        </button>
-                        <button class="icon-btn delete-doc" data-id="${id}" title="Excluir">
-                            <span class="material-icons-round">delete</span>
-                        </button>
-                    </div>
-                </div>
-                <h4 style="margin-bottom: 4px;">${data.title || 'Sem título'}</h4>
-                <div class="document-preview">${preview}</div>
-                <div style="font-size: 12px; color: var(--text-light); margin-top: 8px;">
-                    ${date}
-                </div>
-            `;
-            
-            card.addEventListener('click', (e) => {
-                if (!e.target.closest('.edit-doc, .delete-doc')) {
-                    openEditor(data.type, id);
-                }
-            });
-            
-            card.querySelector('.edit-doc').addEventListener('click', (e) => {
-                e.stopPropagation();
-                openEditor(data.type, id);
-            });
-            
-            card.querySelector('.delete-doc').addEventListener('click', async (e) => {
-                e.stopPropagation();
-                if (confirm('Tem certeza que deseja excluir este documento?')) {
-                    try {
-                        await db.collection('users')
-                            .doc(currentUser.uid)
-                            .collection('documents')
-                            .doc(id)
-                            .delete();
-                        loadDocuments();
-                    } catch (error) {
-                        console.error('Erro ao excluir:', error);
-                        alert('Erro ao excluir documento');
-                    }
-                }
-            });
-            
-            documentsList.appendChild(card);
-        }
-
-        function openEditor(type, docId = null) {
-            editorType = type;
-            isEditing = !!docId;
-            currentDocument = docId;
-            
-            modalTitle.textContent = isEditing ? 'Editar Documento' : 'Novo Documento';
-            
-            if (type === 'note') {
-                noteEditor.style.display = 'block';
-                checklistEditor.style.display = 'none';
-                noteEditor.innerHTML = '';
-                noteTitle.value = '';
-            } else {
-                noteEditor.style.display = 'none';
-                checklistEditor.style.display = 'block';
-                checklistItems.innerHTML = '';
-                noteTitle.value = '';
-            }
-            
-            if (docId) {
-                loadDocumentData(docId);
-            }
-            
-            editorModal.classList.add('active');
-        }
-
-        async function loadDocumentData(docId) {
-            try {
-                const doc = await db.collection('users')
-                    .doc(currentUser.uid)
-                    .collection('documents')
-                    .doc(docId)
-                    .get();
-                
-                if (doc.exists) {
-                    const data = doc.data();
-                    noteTitle.value = data.title || '';
-                    
-                    if (data.type === 'note') {
-                        noteEditor.innerHTML = data.content || '';
-                    } else if (data.type === 'checklist' && data.items) {
-                        checklistItems.innerHTML = '';
-                        data.items.forEach((item) => {
-                            addChecklistItem(item.text, item.checked);
-                        });
-                    }
-                }
-            } catch (error) {
-                console.error('Erro ao carregar documento:', error);
-                alert('Erro ao carregar documento');
-            }
-        }
-
-        function addChecklistItem(text = '', checked = false) {
-            const itemDiv = document.createElement('div');
-            itemDiv.className = 'checklist-item';
-            itemDiv.innerHTML = `
-                <input type="checkbox" ${checked ? 'checked' : ''}>
-                <input type="text" value="${text}" placeholder="Novo item...">
-                <button class="icon-btn remove-item" style="width: 32px; height: 32px;">
-                    <span class="material-icons-round">close</span>
-                </button>
-            `;
-            
-            itemDiv.querySelector('.remove-item').addEventListener('click', () => {
-                itemDiv.remove();
-            });
-            
-            checklistItems.appendChild(itemDiv);
-        }
-
-        addItemBtn.addEventListener('click', () => {
-            addChecklistItem();
-        });
-
-        async function saveDocument() {
-            const title = noteTitle.value.trim() || 'Sem título';
-            
-            try {
-                if (editorType === 'note') {
-                    const content = noteEditor.innerHTML;
-                    
-                    const docData = {
-                        type: 'note',
-                        title,
-                        content,
-                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    };
-                    
-                    if (!isEditing) {
-                        docData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-                    }
-                    
-                    await saveToFirestore(docData);
-                    
-                } else if (editorType === 'checklist') {
-                    const items = [];
-                    const itemElements = checklistItems.querySelectorAll('.checklist-item');
-                    
-                    itemElements.forEach((item) => {
-                        const checkbox = item.querySelector('input[type="checkbox"]');
-                        const textInput = item.querySelector('input[type="text"]');
-                        if (textInput.value.trim()) {
-                            items.push({
-                                text: textInput.value.trim(),
-                                checked: checkbox.checked
-                            });
-                        }
-                    });
-                    
-                    const docData = {
-                        type: 'checklist',
-                        title,
-                        items,
-                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    };
-                    
-                    if (!isEditing) {
-                        docData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-                    }
-                    
-                    await saveToFirestore(docData);
-                }
-                
-                closeEditor();
-                loadDocuments();
-            } catch (error) {
-                console.error('Erro ao salvar:', error);
-                alert('Erro ao salvar documento. Tente novamente.');
-            }
-        }
-
-        async function saveToFirestore(data) {
-            const userDocRef = db.collection('users').doc(currentUser.uid);
-            
-            if (isEditing && currentDocument) {
-                await userDocRef.collection('documents').doc(currentDocument).update(data);
-            } else {
-                await userDocRef.collection('documents').add(data);
-            }
-        }
-
-        function closeEditor() {
-            editorModal.classList.remove('active');
-            currentDocument = null;
-            isEditing = false;
-            noteTitle.value = '';
-            noteEditor.innerHTML = '';
-            checklistItems.innerHTML = '';
-        }
-
-        saveDocumentBtn.addEventListener('click', saveDocument);
-        cancelEditBtn.addEventListener('click', closeEditor);
-        closeModalBtn.addEventListener('click', closeEditor);
-
-        // ===== NOVOS DOCUMENTOS =====
-        newNoteBtn.addEventListener('click', () => openEditor('note'));
-        newChecklistBtn.addEventListener('click', () => openEditor('checklist'));
-
-        // ===== PESQUISA =====
-        searchBtn.addEventListener('click', () => {
-            searchBar.classList.toggle('hidden');
-            if (!searchBar.classList.contains('hidden')) {
-                searchInput.focus();
-            } else {
-                searchInput.value = '';
-                loadDocuments();
-            }
-        });
-
-        closeSearchBtn.addEventListener('click', () => {
-            searchBar.classList.add('hidden');
-            searchInput.value = '';
-            loadDocuments();
-        });
-
-        searchInput.addEventListener('input', (e) => {
-            loadDocuments(e.target.value);
-        });
-
-        // ===== SIDEBAR =====
-        menuBtn.addEventListener('click', () => {
-            sidebar.classList.add('active');
-            sidebarOverlay.classList.add('active');
-        });
-
-        sidebarOverlay.addEventListener('click', () => {
-            sidebar.classList.remove('active');
-            sidebarOverlay.classList.remove('active');
-        });
-
-        // ===== FECHAR MODAL COM ESC =====
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && editorModal.classList.contains('active')) {
-                closeEditor();
-            }
-        });
-
-        // ===== PLACEHOLDER NO EDITOR =====
-        noteEditor.addEventListener('focus', function() {
-            if (this.innerHTML === '' || this.innerHTML === '<br>') {
-                this.classList.add('empty');
-            }
-        });
-
-        noteEditor.addEventListener('blur', function() {
-            if (this.innerHTML === '' || this.innerHTML === '<br>') {
-                this.classList.remove('empty');
-            }
-        });
-
-        console.log('✅ WANotes inicializado com sucesso!');
-        console.log('👤 Aguardando autenticação...');
-    </script>
+      `;
+      
+      noteBody.focus();
+      document.execCommand('insertHTML', false, html);
+      saveData();
+    });
+  </script>
 </body>
 </html>
