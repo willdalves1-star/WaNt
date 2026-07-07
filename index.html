@@ -155,9 +155,6 @@
       display: flex;
       align-items: center;
       gap: 6px;
-    }
-
-    .drag-hint span {
       opacity: 0.7;
     }
 
@@ -180,6 +177,7 @@
       position: relative;
       user-select: none;
       -webkit-user-select: none;
+      -webkit-touch-callout: none;
     }
 
     #note-list li:hover {
@@ -191,10 +189,12 @@
     }
 
     #note-list li.dragging {
-      opacity: 0.5;
+      opacity: 0.4;
       background: rgba(10, 132, 255, 0.2);
       border: 2px dashed var(--accent-color);
       border-radius: 8px;
+      transform: scale(0.95);
+      z-index: 5;
     }
 
     #note-list li.drag-over {
@@ -206,30 +206,9 @@
       display: flex;
       align-items: center;
       width: 100%;
-      padding: 0.75rem 0.5rem 0.75rem 0.75rem;
+      padding: 0.85rem 1rem;
       gap: 8px;
-    }
-
-    .drag-handle {
-      cursor: grab;
-      color: var(--text-secondary);
-      font-size: 1.2rem;
-      padding: 4px;
-      display: flex;
-      align-items: center;
-      opacity: 0.5;
-      transition: opacity 0.2s;
-      flex-shrink: 0;
-      touch-action: none;
-    }
-
-    .drag-handle:hover {
-      opacity: 1;
-      color: var(--accent-color);
-    }
-
-    .drag-handle:active {
-      cursor: grabbing;
+      pointer-events: none;
     }
 
     .note-item-content {
@@ -268,6 +247,9 @@
       justify-content: center;
       width: 32px;
       height: 32px;
+      pointer-events: auto;
+      position: relative;
+      z-index: 10;
     }
 
     .btn-delete-note:hover {
@@ -472,16 +454,16 @@
       position: fixed;
       pointer-events: none;
       z-index: 1000;
-      background: rgba(10, 132, 255, 0.2);
+      background: rgba(10, 132, 255, 0.25);
       border: 2px solid var(--accent-color);
-      border-radius: 8px;
+      border-radius: 10px;
       padding: 0.75rem 1rem;
       color: var(--text-primary);
       font-size: 0.95rem;
       font-weight: 500;
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
       transform: translate(-50%, -50%);
       white-space: nowrap;
       overflow: hidden;
@@ -529,8 +511,8 @@
       </div>
       
       <div class="drag-hint">
-        <span>⋮⋮</span>
-        <span>Arraste para reordenar</span>
+        <span>✋</span>
+        <span>Toque longo e arraste para reordenar</span>
       </div>
       
       <ul id="note-list"></ul>
@@ -620,8 +602,10 @@
     let dragGhost = null;
     let touchStartY = 0;
     let touchStartX = 0;
+    let touchStartTime = 0;
     let isDragging = false;
-    let dragStartTimeout = null;
+    let longPressTimeout = null;
+    let hasMoved = false;
 
     // Elementos da DOM
     const authScreen = document.getElementById('auth-screen');
@@ -725,7 +709,6 @@
       const saved = localStorage.getItem(`notes_${currentUser.uid}`);
       notes = saved ? JSON.parse(saved) : [];
 
-      // Adiciona ordem se não existir
       notes.forEach((note, index) => {
         if (note.order === undefined) {
           note.order = index;
@@ -735,7 +718,6 @@
       if (notes.length === 0) {
         createNewNote();
       } else {
-        // Ordena por campo 'order'
         notes.sort((a, b) => a.order - b.order);
         currentNoteId = notes[0].id;
         renderSidebar();
@@ -743,7 +725,7 @@
       }
     }
 
-    // --- SISTEMA DE DRAG AND DROP ---
+    // --- SISTEMA DE DRAG AND DROP COM TOQUE LONGO ---
 
     function createDragGhost(text) {
       const ghost = document.createElement('div');
@@ -760,50 +742,40 @@
       }
     }
 
-    function handleDragStart(e, noteId, element) {
-      // Previne comportamento padrão
-      e.preventDefault();
-      
+    function startDragging(noteId, element, clientX, clientY) {
       draggedNoteId = noteId;
       draggedItem = element;
       isDragging = true;
+      hasMoved = true;
       
-      // Adiciona classe visual
       element.classList.add('dragging');
       
-      // Cria o ghost
       const note = notes.find(n => n.id === noteId);
       dragGhost = createDragGhost(note ? note.title : 'Sem título');
       
-      // Desabilita transições durante o drag
+      if (dragGhost) {
+        dragGhost.style.left = clientX + 'px';
+        dragGhost.style.top = clientY + 'px';
+      }
+      
       const items = noteList.querySelectorAll('li');
       items.forEach(item => {
         item.style.transition = 'none';
       });
     }
 
-    function handleDragMove(e) {
+    function handleDragMove(clientX, clientY) {
       if (!isDragging || !draggedItem) return;
       
-      e.preventDefault();
-      
-      // Obtém coordenadas do toque/mouse
-      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      
-      // Move o ghost
       if (dragGhost) {
         dragGhost.style.left = clientX + 'px';
         dragGhost.style.top = clientY + 'px';
       }
       
-      // Encontra o item sob o cursor
       const items = [...noteList.querySelectorAll('li:not(.dragging)')];
       
-      // Remove classes de drag-over de todos
       items.forEach(item => item.classList.remove('drag-over'));
       
-      // Encontra o item mais próximo
       const targetItem = items.find(item => {
         const rect = item.getBoundingClientRect();
         return clientY >= rect.top && clientY <= rect.bottom;
@@ -814,27 +786,19 @@
       }
     }
 
-    function handleDragEnd(e) {
+    function stopDragging(clientY) {
       if (!isDragging) return;
       
-      e.preventDefault();
-      
-      // Remove classes visuais
       if (draggedItem) {
         draggedItem.classList.remove('dragging');
       }
       
-      // Remove todas as classes drag-over
       const items = noteList.querySelectorAll('li');
       items.forEach(item => {
         item.classList.remove('drag-over');
         item.style.transition = '';
       });
       
-      // Obtém coordenadas finais
-      const clientY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
-      
-      // Encontra o item alvo
       const targetItem = [...items].find(item => {
         if (item === draggedItem) return false;
         const rect = item.getBoundingClientRect();
@@ -846,16 +810,11 @@
         reorderNotes(draggedNoteId, targetNoteId);
       }
       
-      // Limpa estado
       removeDragGhost();
       draggedItem = null;
       draggedNoteId = null;
       isDragging = false;
-      
-      if (dragStartTimeout) {
-        clearTimeout(dragStartTimeout);
-        dragStartTimeout = null;
-      }
+      hasMoved = false;
     }
 
     function reorderNotes(draggedId, targetId) {
@@ -864,102 +823,160 @@
       
       if (draggedIndex === -1 || targetIndex === -1) return;
       
-      // Remove o item arrastado
       const [draggedNote] = notes.splice(draggedIndex, 1);
-      
-      // Insere na nova posição
       notes.splice(targetIndex, 0, draggedNote);
       
-      // Atualiza ordem
       notes.forEach((note, index) => {
         note.order = index;
       });
       
-      // Salva e renderiza
       saveDataDirect();
       renderSidebar();
     }
 
-    function setupDragListeners() {
-      // Remove listeners antigos para evitar duplicação
-      noteList.removeEventListener('touchstart', handleTouchStart);
-      noteList.removeEventListener('touchmove', handleTouchMove);
-      noteList.removeEventListener('touchend', handleTouchEnd);
-      noteList.removeEventListener('mousedown', handleMouseDown);
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-      
-      // Adiciona novos listeners
-      noteList.addEventListener('touchstart', handleTouchStart, { passive: false });
-      noteList.addEventListener('touchmove', handleTouchMove, { passive: false });
-      noteList.addEventListener('touchend', handleTouchEnd);
-      noteList.addEventListener('mousedown', handleMouseDown);
-    }
-
-    // Handlers de Touch
+    // Handlers de Touch para toda a nota
     function handleTouchStart(e) {
-      const handle = e.target.closest('.drag-handle');
-      if (!handle) return;
+      // Ignora se for no botão de deletar
+      if (e.target.closest('.btn-delete-note')) return;
       
-      const li = handle.closest('li');
+      const li = e.target.closest('li');
       if (!li) return;
       
       const noteId = li.dataset.noteId;
       touchStartY = e.touches[0].clientY;
       touchStartX = e.touches[0].clientX;
+      touchStartTime = Date.now();
+      hasMoved = false;
       
-      // Timeout para iniciar o drag após um pequeno delay (evita conflito com scroll)
-      dragStartTimeout = setTimeout(() => {
-        handleDragStart(e, noteId, li);
-      }, 150);
+      // Configura o toque longo (500ms)
+      clearLongPressTimeout();
+      longPressTimeout = setTimeout(() => {
+        if (!hasMoved) {
+          startDragging(noteId, li, e.touches[0].clientX, e.touches[0].clientY);
+          // Vibração tátil se disponível
+          if (window.navigator && window.navigator.vibrate) {
+            window.navigator.vibrate(50);
+          }
+        }
+      }, 500);
     }
 
     function handleTouchMove(e) {
       if (!isDragging) {
-        // Cancela o drag se o usuário moveu muito na horizontal (scroll)
-        if (dragStartTimeout) {
-          const moveY = Math.abs(e.touches[0].clientY - touchStartY);
-          const moveX = Math.abs(e.touches[0].clientX - touchStartX);
-          
-          if (moveX > 10 || moveY > 10) {
-            clearTimeout(dragStartTimeout);
-            dragStartTimeout = null;
-          }
+        // Verifica se houve movimento suficiente para cancelar o toque longo
+        const moveY = Math.abs(e.touches[0].clientY - touchStartY);
+        const moveX = Math.abs(e.touches[0].clientX - touchStartX);
+        
+        if (moveX > 10 || moveY > 10) {
+          hasMoved = true;
+          clearLongPressTimeout();
         }
         return;
       }
       
       e.preventDefault();
-      handleDragMove(e);
+      handleDragMove(e.touches[0].clientX, e.touches[0].clientY);
     }
 
     function handleTouchEnd(e) {
-      handleDragEnd(e);
+      clearLongPressTimeout();
+      
+      if (isDragging) {
+        const clientY = e.changedTouches[0].clientY;
+        stopDragging(clientY);
+        return;
+      }
+      
+      // Se não estava arrastando e não moveu muito, é um clique normal
+      if (!hasMoved) {
+        const li = e.target.closest('li');
+        if (li && !e.target.closest('.btn-delete-note')) {
+          const noteId = li.dataset.noteId;
+          sidebar.classList.remove('open');
+          loadNote(noteId);
+        }
+      }
     }
 
     // Handlers de Mouse
     function handleMouseDown(e) {
-      const handle = e.target.closest('.drag-handle');
-      if (!handle) return;
+      // Ignora se for no botão de deletar
+      if (e.target.closest('.btn-delete-note')) return;
       
-      const li = handle.closest('li');
+      const li = e.target.closest('li');
       if (!li) return;
       
       const noteId = li.dataset.noteId;
-      handleDragStart(e, noteId, li);
+      touchStartY = e.clientY;
+      touchStartX = e.clientX;
+      touchStartTime = Date.now();
+      hasMoved = false;
+      
+      // Para mouse, o drag começa mais rápido (200ms)
+      clearLongPressTimeout();
+      longPressTimeout = setTimeout(() => {
+        if (!hasMoved) {
+          startDragging(noteId, li, e.clientX, e.clientY);
+        }
+      }, 200);
       
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
     }
 
     function handleMouseMove(e) {
-      handleDragMove(e);
+      const moveY = Math.abs(e.clientY - touchStartY);
+      const moveX = Math.abs(e.clientX - touchStartX);
+      
+      if (!isDragging) {
+        if (moveX > 5 || moveY > 5) {
+          hasMoved = true;
+          clearLongPressTimeout();
+        }
+        return;
+      }
+      
+      handleDragMove(e.clientX, e.clientY);
     }
 
     function handleMouseUp(e) {
-      handleDragEnd(e);
+      clearLongPressTimeout();
+      
+      if (isDragging) {
+        stopDragging(e.clientY);
+      } else if (!hasMoved) {
+        // Clique normal
+        const li = e.target.closest('li');
+        if (li && !e.target.closest('.btn-delete-note')) {
+          const noteId = li.dataset.noteId;
+          sidebar.classList.remove('open');
+          loadNote(noteId);
+        }
+      }
+      
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
+    }
+
+    function clearLongPressTimeout() {
+      if (longPressTimeout) {
+        clearTimeout(longPressTimeout);
+        longPressTimeout = null;
+      }
+    }
+
+    function setupDragListeners() {
+      // Remove listeners antigos
+      noteList.removeEventListener('touchstart', handleTouchStart);
+      noteList.removeEventListener('touchmove', handleTouchMove);
+      noteList.removeEventListener('touchend', handleTouchEnd);
+      noteList.removeEventListener('mousedown', handleMouseDown);
+      
+      // Adiciona novos listeners
+      noteList.addEventListener('touchstart', handleTouchStart, { passive: false });
+      noteList.addEventListener('touchmove', handleTouchMove, { passive: false });
+      noteList.addEventListener('touchend', handleTouchEnd);
+      noteList.addEventListener('mousedown', handleMouseDown);
     }
 
     // --- RENDERIZAÇÃO ---
@@ -970,19 +987,12 @@
       notes.forEach(note => {
         const li = document.createElement('li');
         li.dataset.noteId = note.id;
-        li.draggable = false; // Usamos drag manual
         
         if (note.id === currentNoteId) li.classList.add('active');
         
         // Wrapper
         const wrapper = document.createElement('div');
         wrapper.className = 'note-item-wrapper';
-        
-        // Alça de arrasto
-        const dragHandle = document.createElement('div');
-        dragHandle.className = 'drag-handle';
-        dragHandle.innerHTML = '⋮⋮';
-        dragHandle.title = 'Arraste para reordenar';
         
         // Container do conteúdo
         const contentDiv = document.createElement('div');
@@ -1005,27 +1015,19 @@
         deleteBtn.innerHTML = '🗑';
         deleteBtn.title = 'Excluir nota';
         
-        // Eventos
-        contentDiv.addEventListener('click', (e) => {
-          if (isDragging) return;
-          sidebar.classList.remove('open');
-          loadNote(note.id);
-        });
-        
         deleteBtn.addEventListener('click', (e) => {
           e.stopPropagation();
+          e.preventDefault();
           noteToDelete = note.id;
           deleteModal.classList.add('active');
         });
         
-        wrapper.appendChild(dragHandle);
         wrapper.appendChild(contentDiv);
         wrapper.appendChild(deleteBtn);
         li.appendChild(wrapper);
         noteList.appendChild(li);
       });
       
-      // Reconfigura os listeners de drag
       setupDragListeners();
     }
 
@@ -1040,7 +1042,6 @@
         order: 0
       };
       
-      // Incrementa a ordem de todas as notas existentes
       notes.forEach(note => {
         note.order = (note.order || 0) + 1;
       });
