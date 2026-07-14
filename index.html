@@ -610,6 +610,17 @@
       onAuthStateChanged, 
       signOut 
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { 
+      getFirestore, 
+      collection, 
+      doc, 
+      setDoc, 
+      getDocs, 
+      deleteDoc, 
+      query, 
+      orderBy,
+      writeBatch
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     // Configuração do seu Projeto Firebase
     const firebaseConfig = {
@@ -622,10 +633,11 @@
       measurementId: "G-XSRFDL8HF1"
     };
 
-    // Inicialização do Firebase e Auth
+    // Inicialização do Firebase
     const app = initializeApp(firebaseConfig);
     const analytics = getAnalytics(app);
     const auth = getAuth(app);
+    const db = getFirestore(app);
 
     // Variáveis de Estado
     let currentUser = null;
@@ -715,7 +727,7 @@
       }
     });
 
-    // --- LÓGICA DO APP E NOTAS ---
+    // --- LÓGICA DO APP E NOTAS (COM FIRESTORE) ---
 
     function formatDate(timestamp) {
       if (!timestamp) return '—';
@@ -742,9 +754,95 @@
       }) + ' às ' + date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     }
 
-    function initApp() {
-      const saved = localStorage.getItem(`notes_${currentUser.uid}`);
-      notes = saved ? JSON.parse(saved) : [];
+    // Carregar notas do Firestore
+    async function loadNotesFromFirestore() {
+      if (!currentUser) return [];
+      
+      try {
+        const notesRef = collection(db, 'users', currentUser.uid, 'notes');
+        const q = query(notesRef, orderBy('order', 'asc'));
+        const querySnapshot = await getDocs(q);
+        
+        const loadedNotes = [];
+        querySnapshot.forEach((doc) => {
+          loadedNotes.push({
+            id: doc.id,
+            ...doc.data()
+          });
+        });
+        
+        return loadedNotes;
+      } catch (error) {
+        console.error('Erro ao carregar notas:', error);
+        return [];
+      }
+    }
+
+    // Salvar nota no Firestore
+    async function saveNoteToFirestore(note) {
+      if (!currentUser) return;
+      
+      try {
+        const noteRef = doc(db, 'users', currentUser.uid, 'notes', note.id);
+        await setDoc(noteRef, {
+          title: note.title || '',
+          content: note.content || '',
+          createdAt: note.createdAt,
+          updatedAt: note.updatedAt,
+          order: note.order || 0
+        });
+      } catch (error) {
+        console.error('Erro ao salvar nota:', error);
+      }
+    }
+
+    // Deletar nota do Firestore
+    async function deleteNoteFromFirestore(noteId) {
+      if (!currentUser) return;
+      
+      try {
+        const noteRef = doc(db, 'users', currentUser.uid, 'notes', noteId);
+        await deleteDoc(noteRef);
+      } catch (error) {
+        console.error('Erro ao deletar nota:', error);
+      }
+    }
+
+    // Salvar todas as notas no Firestore (usado para reordenar e importar)
+    async function saveAllNotesToFirestore() {
+      if (!currentUser) return;
+      
+      try {
+        const batch = writeBatch(db);
+        const notesRef = collection(db, 'users', currentUser.uid, 'notes');
+        
+        // Primeiro, deleta todas as notas existentes
+        const querySnapshot = await getDocs(notesRef);
+        querySnapshot.forEach((document) => {
+          batch.delete(document.ref);
+        });
+        
+        // Depois, salva todas as notas atuais
+        notes.forEach(note => {
+          const noteRef = doc(db, 'users', currentUser.uid, 'notes', note.id);
+          batch.set(noteRef, {
+            title: note.title || '',
+            content: note.content || '',
+            createdAt: note.createdAt,
+            updatedAt: note.updatedAt,
+            order: note.order || 0
+          });
+        });
+        
+        await batch.commit();
+      } catch (error) {
+        console.error('Erro ao salvar todas as notas:', error);
+      }
+    }
+
+    async function initApp() {
+      // Carrega as notas do Firestore
+      notes = await loadNotesFromFirestore();
 
       notes.forEach((note, index) => {
         if (note.order === undefined) {
@@ -867,7 +965,8 @@
         note.order = index;
       });
       
-      saveDataDirect();
+      // Salva no Firestore em vez de localStorage
+      saveAllNotesToFirestore();
       renderSidebar();
     }
 
@@ -1068,7 +1167,7 @@
       setupDragListeners();
     }
 
-    function createNewNote() {
+    async function createNewNote() {
       const timestamp = Date.now();
       const newNote = {
         id: timestamp.toString(),
@@ -1085,7 +1184,9 @@
       
       notes.unshift(newNote);
       currentNoteId = newNote.id;
-      saveDataDirect();
+      
+      // Salva no Firestore
+      await saveAllNotesToFirestore();
       renderSidebar();
       loadNote(currentNoteId);
     }
@@ -1103,29 +1204,29 @@
       }
     }
 
-    function saveData() {
+    async function saveData() {
       if (!currentNoteId || !currentUser) return;
       const note = notes.find(n => n.id === currentNoteId);
       if (note) {
         note.title = noteTitle.value;
         note.content = noteBody.innerHTML;
         note.updatedAt = Date.now();
-        saveDataDirect();
+        
+        // Salva no Firestore
+        await saveNoteToFirestore(note);
         noteUpdated.textContent = formatDate(note.updatedAt);
       }
       renderSidebar();
     }
 
-    function saveDataDirect() {
-      if (!currentUser) return;
-      localStorage.setItem(`notes_${currentUser.uid}`, JSON.stringify(notes));
-    }
-
-    function deleteNote(id) {
+    async function deleteNote(id) {
       const noteIndex = notes.findIndex(n => n.id === id);
       if (noteIndex === -1) return;
       
       notes.splice(noteIndex, 1);
+      
+      // Deleta do Firestore
+      await deleteNoteFromFirestore(id);
       
       if (currentNoteId === id) {
         if (notes.length > 0) {
@@ -1136,13 +1237,20 @@
         }
       }
       
-      saveDataDirect();
       renderSidebar();
     }
 
-    // Auto-save
-    noteTitle.addEventListener('input', saveData);
-    noteBody.addEventListener('input', saveData);
+    // Auto-save com debounce para não sobrecarregar o Firestore
+    let saveTimeout;
+    noteTitle.addEventListener('input', () => {
+      clearTimeout(saveTimeout);
+      saveTimeout = setTimeout(saveData, 1000);
+    });
+    
+    noteBody.addEventListener('input', () => {
+      clearTimeout(saveTimeout);
+      saveTimeout = setTimeout(saveData, 1000);
+    });
 
     // Controles
     document.getElementById('btn-new-note').addEventListener('click', createNewNote);
@@ -1161,9 +1269,9 @@
       deleteModal.classList.remove('active');
     });
 
-    document.getElementById('btn-confirm-delete').addEventListener('click', () => {
+    document.getElementById('btn-confirm-delete').addEventListener('click', async () => {
       if (noteToDelete) {
-        deleteNote(noteToDelete);
+        await deleteNote(noteToDelete);
         noteToDelete = null;
       }
       deleteModal.classList.remove('active');
@@ -1231,13 +1339,13 @@
     });
 
     // Processar o arquivo importado
-    document.getElementById('import-file-input').addEventListener('change', (e) => {
+    document.getElementById('import-file-input').addEventListener('change', async (e) => {
       const file = e.target.files[0];
       if (!file || !currentUser) return;
       
       const reader = new FileReader();
       
-      reader.onload = (event) => {
+      reader.onload = async (event) => {
         try {
           const importedData = JSON.parse(event.target.result);
           
@@ -1262,8 +1370,8 @@
             }
           });
           
-          // Salva e recarrega
-          saveDataDirect();
+          // Salva no Firestore
+          await saveAllNotesToFirestore();
           
           if (notes.length > 0) {
             currentNoteId = notes[0].id;
