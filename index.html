@@ -267,6 +267,38 @@
       color: var(--text-secondary);
     }
 
+    .import-export-buttons {
+      display: flex;
+      gap: 8px;
+      padding: 0.75rem 1rem;
+      border-top: 1px solid var(--glass-border);
+    }
+
+    .btn-import-export {
+      flex: 1;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--glass-border);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-primary);
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .btn-import-export:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    #import-file-input {
+      display: none;
+    }
+
     #editor {
       flex: 1;
       display: flex;
@@ -520,6 +552,11 @@
       <div class="sidebar-footer">
         <span id="user-display">Usuário</span>
         <button id="btn-logout" class="btn-danger">Sair</button>
+      </div>
+      <div class="import-export-buttons">
+        <button id="btn-export-notes" class="btn-import-export">📤 Exportar</button>
+        <button id="btn-import-notes" class="btn-import-export">📥 Importar</button>
+        <input type="file" id="import-file-input" accept=".json" />
       </div>
     </nav>
     
@@ -1162,6 +1199,92 @@
           e.target.id !== 'btn-toggle-sidebar') {
         sidebar.classList.remove('open');
       }
+    });
+
+    // --- FUNÇÕES DE IMPORT/EXPORT ---
+
+    // Exportar notas
+    document.getElementById('btn-export-notes').addEventListener('click', () => {
+      if (!currentUser) return;
+      
+      const exportData = {
+        appName: "WA Notes",
+        exportDate: new Date().toISOString(),
+        userEmail: currentUser.email,
+        notes: notes
+      };
+      
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `wanotes-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+    // Importar notas - acionar o input file
+    document.getElementById('btn-import-notes').addEventListener('click', () => {
+      document.getElementById('import-file-input').click();
+    });
+
+    // Processar o arquivo importado
+    document.getElementById('import-file-input').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file || !currentUser) return;
+      
+      const reader = new FileReader();
+      
+      reader.onload = (event) => {
+        try {
+          const importedData = JSON.parse(event.target.result);
+          
+          // Valida o formato do arquivo
+          if (!importedData.notes || !Array.isArray(importedData.notes)) {
+            alert('Arquivo inválido! O formato não corresponde a um backup do WA Notes.');
+            return;
+          }
+          
+          // Confirmação antes de importar
+          if (!confirm(`Deseja importar ${importedData.notes.length} notas? Isso substituirá suas notas atuais.`)) {
+            return;
+          }
+          
+          // Substitui as notas atuais
+          notes = importedData.notes;
+          
+          // Atualiza a ordem se necessário
+          notes.forEach((note, index) => {
+            if (note.order === undefined) {
+              note.order = index;
+            }
+          });
+          
+          // Salva e recarrega
+          saveDataDirect();
+          
+          if (notes.length > 0) {
+            currentNoteId = notes[0].id;
+            loadNote(currentNoteId);
+          } else {
+            createNewNote();
+          }
+          
+          renderSidebar();
+          alert('Notas importadas com sucesso!');
+          
+        } catch (error) {
+          alert('Erro ao importar o arquivo. Certifique-se de que é um arquivo JSON válido.');
+          console.error('Erro na importação:', error);
+        }
+      };
+      
+      reader.readAsText(file);
+      
+      // Limpa o input para permitir importar o mesmo arquivo novamente
+      e.target.value = '';
     });
   </script>
 </body>
